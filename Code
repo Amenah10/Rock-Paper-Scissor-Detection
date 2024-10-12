@@ -1,0 +1,60 @@
+clc;
+clear all;
+close all;
+
+trainingSet = imageDatastore('C:\Users\Amna A. Mujeeb\Documents\Semester 5\trainingset','IncludeSubfolders',true,'FileExtensions','.jpg','LabelSource','foldernames');
+countEachLabel(trainingSet)
+
+img = readimage(trainingSet, 14);
+[hog1,visualization] = extractHOGFeatures(img,'CellSize',[16 16]);
+
+cellSize = [16 16];
+hogFeatureSize = length(hog1);
+
+numImages = numel(trainingSet.Files);
+trainingFeatures = zeros(numImages,hogFeatureSize,'single');
+
+for i = 1:numImages
+    img = readimage(trainingSet,i);
+    
+    img = rgb2gray(img);
+    
+    % Apply pre-processing steps
+    img = imbinarize(img);
+    
+    trainingFeatures(i, :) = extractHOGFeatures(img,'CellSize',cellSize);  
+end
+
+% Get labels for each image.
+trainingLabels = trainingSet.Labels;
+
+classifier = fitcecoc(trainingFeatures, trainingLabels);
+testSet = imageDatastore('C:\Users\Amna A. Mujeeb\Documents\Semester 5\testingset','IncludeSubfolders',true,'FileExtensions','.jpg','LabelSource','foldernames');
+countEachLabel(testSet)
+
+% Extract HOG features from the test set. 
+numbImages = numel(testSet.Files);
+testFeatures = zeros(numbImages,hogFeatureSize,'single');
+
+for i = 1:numbImages
+    img = readimage(testSet,i);
+    
+    img = rgb2gray(img);
+    
+    % Apply pre-processing steps
+    img = imbinarize(img);
+    
+    testFeatures(i, :) = extractHOGFeatures(img,'CellSize',cellSize);  
+end
+
+% Get labels for each image.
+testLabels = testSet.Labels;
+
+% Make class predictions using the test features.
+predictedLabels = predict(classifier, testFeatures);
+
+% Tabulate the results using a confusion matrix.
+% confMat = confusionmat(testLabels, predictedLabels);
+% confmat1 = confusionchart(testLabels,predictedLabels);
+
+plotconfusion(testLabels, predictedLabels)
